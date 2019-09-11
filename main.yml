@@ -1,0 +1,4 @@
+#- import_playbook: ipaddr.yml
+- import_playbook: playbook.yml
+- import_playbook: master.yml
+- import_playbook: nodes.yml

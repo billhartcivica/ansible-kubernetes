@@ -1,0 +1,105 @@
+---
+- name: K8s Prep
+  hosts: cluster
+  become: true
+
+  tasks:
+  - name: Add epel-release repo
+    yum:
+      name: epel-release
+      state: present
+
+  - name: Copy kubernetes repo
+    copy:
+      src: /home/williamhart/k8s/files/kubernetes.repo
+      dest: /etc/yum.repos.d/kubernetes.repo
+      owner: root
+      group: root
+      mode: '0644'
+
+  - name: upgrade installation
+    yum:
+      name: '*'
+      state: present
+
+  - name: Disable SELinux
+    selinux:
+      state: disabled
+
+  - name: Disable SELinux-file
+    replace:
+      path: /etc/sysconfig/selinux
+      regexp: '^SELINUX=enforcing'
+      replace: 'SELINUX=disabled'
+
+  - name: Install Docker dependencies
+    yum:
+      name: 
+       - yum-utils
+       - device-mapper-persistent-data
+       - lvm2 
+      state: present
+
+  - name: Copy Docker repo
+    copy:
+      src: /home/williamhart/k8s/files/docker-ce.repo
+      dest: /etc/yum.repos.d/docker-ce.repo
+      owner: root
+      group: root
+      mode: '0644'
+
+  - name: Install Docker-CE
+    yum:
+      name: docker-ce
+      state: present
+
+  - name: Enable Docker service
+    service:
+      name: docker
+      enabled: yes
+
+  - name: Start Docker service
+    service:
+      name: docker
+      state: started
+
+  - name: Stop firewalld service
+    service:
+      name: firewalld
+      state: stopped
+
+  - name: Disable firewalld service
+    service:
+      name: firewalld
+      enabled: no
+
+  - name: Disable swap
+    replace:
+      path: /etc/fstab
+      regexp: '^/dev/mapper/centos-swap'
+      replace: '# /dev/mapper/centos-swap'
+
+  - name: Stop swap
+    shell: swapoff -a
+
+  - name: Install kube components on all
+    shell: yum install -y kubelet kubeadm kubectl --disableexcludes=kubernetes
+
+  - name: Set br_netfilter iptables setting
+    shell: echo '1' > /proc/sys/net/bridge/bridge-nf-call-iptables
+
+  - name: Set br_netfilter ipv6 iptables setting
+    shell: echo '1' > /proc/sys/net/bridge/bridge-nf-call-ip6tables
+
+  - name: Enable kubelet service
+    service:
+      name: kubelet
+      enabled: yes
+
+  - name: Start kubelet service
+    service:
+      name: kubelet
+      state: started
+
+#  - name: Reboot server
+#    shell: reboot

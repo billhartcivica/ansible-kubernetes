@@ -1,0 +1,6 @@
+---
+- name: K8s master
+  hosts: masternodes
+  become: true
+  roles:
+    - masternodes
